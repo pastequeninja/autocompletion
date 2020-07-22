@@ -8,14 +8,12 @@
 #include <InvalidArguments.hpp>
 #include "../include/Parser.hpp"
 
+Parser::Parser() {}
+
 Parser::Parser(const char *dico)
 {
     fileIsValid(dico);
     fillData();
-
-    _cities.emplace_back("Paris");
-    _cities.emplace_back("Lyon");
-    _cities.emplace_back("Marseilles");
 
     _nb.emplace_back("458");
     _nb.emplace_back("56");
@@ -28,7 +26,6 @@ Parser::Parser(const char *dico)
 
 int levenshtein(const std::string &find)
 {
-    (void)(data);
     (void)(find);
     return 0;
 }
@@ -42,13 +39,130 @@ std::string Parser::fileIsValid(const char *dico)
     stream.open(file);
     if (stream) {
         while (std::getline(stream, line)) {
-            checkLine(line);
             line = cleanStr(line, " ", " \t");
+            checkLine(line);
+            SplitEverything(line);
         }
         return (line);
     } else {
         throw(InvalidArguments("Could not open file"));
 
+    }
+}
+
+bool Parser::verif_alpha_char(bool coma_accepted, std::string line)
+{
+    char *tmp = strdup(line.c_str());
+    int i = 0;
+
+    std::cout << "verif alpha char : " << line << std::endl;
+    for (; tmp[i + 1]; i++) {
+        if (!isalpha(tmp[i])) {
+            if (tmp[i] != '\'' && tmp[i] != '-' && tmp[i] != ' ') {
+                free(tmp);
+                std::cout << "Mauvais caractere : *" << tmp[i] << "*" << std::endl;
+                return false;
+            }
+        }
+    }
+    if (coma_accepted == true && tmp[i] == ',') {
+    std::cout << "Alpha char is true! : "<<tmp[i] <<std::endl;
+        free(tmp);
+        return true;
+    }
+    else if (!isalpha(tmp[i])) {
+        free(tmp);
+        std::cout << "Mauvais caractere : *" << tmp[i] << "*" << std::endl;    
+        return false;
+    }
+    else {
+    std::cout << "Alpha char is true!" <<tmp[i]<<std::endl;
+        free(tmp);
+        if (coma_accepted == true)
+            return false;
+        return true;
+    }
+}
+
+bool Parser::verif_nb_street(std::string line)
+{
+    char *tmp = strdup(line.c_str());
+
+    std::cout << "verif nb : " << line << std::endl;
+    for (int i = 0; tmp[i]; i++) {
+        if (isdigit(tmp[i]) == 0) {
+            std::cout << "c'est pas un nombre" << std::endl;
+            return false;
+        }
+    }
+    if (atoi(tmp) > 10000)
+        return false;
+    std::cout << "bon nb !" <<std::endl;
+    return true;
+}
+
+bool Parser::verif_type_street(std::string line)
+{
+    //le getter marche pas
+    Parser *typenames = new Parser();
+    std::vector<std::string> tmp;
+
+    tmp = typenames->getTypesStreetNames();
+    for (std::vector<std::string>::iterator i = tmp.begin(); i != tmp.end(); i++) {
+        if (line == *i) {
+            return true;
+        }
+    }
+    return true;
+}
+
+std::string Parser::getStreetNameString(std::vector<std::string> DeletedEspaces)
+{
+    int j = 0;
+    std::string allStreetName;
+
+    for (std::vector<std::string>::iterator i = DeletedEspaces.begin(); i != DeletedEspaces.end(); i++) {
+        j++;
+        if (j > 2)
+            allStreetName += " " + *i;
+    }
+    allStreetName.erase(allStreetName.begin());
+    std::cout << "allStreetName : " << allStreetName << std::endl;
+    return allStreetName;
+}
+
+void Parser::SplitEverything(std::string line)
+{
+    std::cout << "LINE : " << line << std::endl;
+    std::stringstream iss(line);
+    std::string token;
+    std::vector<std::string> DeletedEspaces;
+    bool validated_string = false;
+    std::string full_street_name;
+
+    while (std::getline(iss, token, ' ')) {
+        DeletedEspaces.push_back(token);
+    }
+    /* for (size_t i = 0; i < DeletedEspaces.size(); i++)
+        std::cout << DeletedEspaces[i] << std::endl; */
+    for (size_t i = 0; i < DeletedEspaces.size(); i++) {
+        if (i == 0) {
+            validated_string = verif_alpha_char(true, DeletedEspaces[i]);
+        }
+        if (i == 1 && validated_string) {
+            validated_string = verif_nb_street(DeletedEspaces[i]);
+        }
+        if (i == 2 && validated_string) {
+            validated_string = verif_type_street(DeletedEspaces[i]);
+        }
+        if (i == 3 && validated_string) {
+            full_street_name = getStreetNameString(DeletedEspaces);
+            validated_string = verif_alpha_char(false, full_street_name);
+            exit(0);
+        }
+        if (validated_string == true)
+            i = i;
+        //mettre dans la globale + reset validated string
     }
 }
 
@@ -97,25 +211,25 @@ std::string Parser::cleanStr(const std::string &line, const std::string& fill,
 
 void Parser::fillData()
 {
-    _data.emplace_back("allée");
-    _data.emplace_back("avenue");
-    _data.emplace_back("boulevard");
-    _data.emplace_back("chemin");
-    _data.emplace_back("impasse");
-    _data.emplace_back("place");
-    _data.emplace_back("quai");
-    _data.emplace_back("rue");
-    _data.emplace_back("square");
+    _type.push_back("allée");
+    _type.push_back("avenue");
+    _type.push_back("boulevard");
+    _type.push_back("chemin");
+    _type.push_back("impasse");
+    _type.push_back("place");
+    _type.push_back("quai");
+    _type.push_back("rue");
+    _type.push_back("square");
 
-    for (auto & i : _data)
-        std::cout << i << ' ' << std::endl;
+/*     for (auto & i : _type)
+        std::cout << i << ' ' << std::endl; */
 }
 
 /*-------------------------Getters---------------------------*/
 
-std::vector<std::string> Parser::getCities()
+std::vector<std::string> Parser::getTypesStreetNames()
 {
-    return _cities;
+    return _type;
 }
 
 std::vector<std::string> Parser::getStreetName()

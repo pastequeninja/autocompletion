@@ -21,7 +21,7 @@ NAME	=	autoCompletion
 
 OBJ	=	$(SRC:.cpp=.o)
 
-CXXFLAGS	=	-I ./include -I ./Errors -W -Wextra -Wall -Werror
+CXXFLAGS	=	-I ./include -I ./Errors -W -Wextra -Wall -Werror -g
 
 TESTFLAGS = -lcriterion -lgcov --coverage
 
