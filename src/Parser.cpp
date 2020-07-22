@@ -35,14 +35,18 @@ std::string Parser::fileIsValid(const char *dico)
     std::string line;
     std::string file = dico;
     std::ifstream stream;
+    std::vector<std::string> clean_data;
 
     stream.open(file);
     if (stream) {
         while (std::getline(stream, line)) {
             line = cleanStr(line, " ", " \t");
             checkLine(line);
-            SplitEverything(line);
+            if (PerfectPlace(line))
+                clean_data.push_back(line);
         }
+        for (size_t i = 0; i <clean_data.size(); i++)
+            std::cout << clean_data[i] << std::endl;
         return (line);
     } else {
         throw(InvalidArguments("Could not open file"));
@@ -55,28 +59,23 @@ bool Parser::verif_alpha_char(bool coma_accepted, std::string line)
     char *tmp = strdup(line.c_str());
     int i = 0;
 
-    std::cout << "verif alpha char : " << line << std::endl;
     for (; tmp[i + 1]; i++) {
         if (!isalpha(tmp[i])) {
             if (tmp[i] != '\'' && tmp[i] != '-' && tmp[i] != ' ') {
                 free(tmp);
-                std::cout << "Mauvais caractere : *" << tmp[i] << "*" << std::endl;
                 return false;
             }
         }
     }
     if (coma_accepted == true && tmp[i] == ',') {
-    std::cout << "Alpha char is true! : "<<tmp[i] <<std::endl;
         free(tmp);
         return true;
     }
     else if (!isalpha(tmp[i])) {
         free(tmp);
-        std::cout << "Mauvais caractere : *" << tmp[i] << "*" << std::endl;    
         return false;
     }
     else {
-    std::cout << "Alpha char is true!" <<tmp[i]<<std::endl;
         free(tmp);
         if (coma_accepted == true)
             return false;
@@ -88,16 +87,13 @@ bool Parser::verif_nb_street(std::string line)
 {
     char *tmp = strdup(line.c_str());
 
-    std::cout << "verif nb : " << line << std::endl;
     for (int i = 0; tmp[i]; i++) {
         if (isdigit(tmp[i]) == 0) {
-            std::cout << "c'est pas un nombre" << std::endl;
             return false;
         }
     }
     if (atoi(tmp) > 10000)
         return false;
-    std::cout << "bon nb !" <<std::endl;
     return true;
 }
 
@@ -116,54 +112,92 @@ bool Parser::verif_type_street(std::string line)
     return true;
 }
 
-std::string Parser::getStreetNameString(std::vector<std::string> DeletedEspaces)
+std::string Parser::getCityName(std::string line, int *pos)
 {
-    int j = 0;
-    std::string allStreetName;
+    char *tmp = strdup(line.c_str());
+    std::string city;
+    int i = 0;
 
-    for (std::vector<std::string>::iterator i = DeletedEspaces.begin(); i != DeletedEspaces.end(); i++) {
-        j++;
-        if (j > 2)
-            allStreetName += " " + *i;
+    for (; tmp[i] && tmp[i] != ','; i++) {
+        city.push_back(tmp[i]);
     }
-    allStreetName.erase(allStreetName.begin());
-    std::cout << "allStreetName : " << allStreetName << std::endl;
-    return allStreetName;
+    if (tmp[i] != ',')
+        return "";
+    city.push_back(',');
+    *pos = i + 1;
+    return city;
 }
 
-void Parser::SplitEverything(std::string line)
+std::string Parser::getNbStreet(std::string line, int *pos)
 {
-    std::cout << "LINE : " << line << std::endl;
+    std::string tmp;
+    size_t i = (size_t)*pos;
+
+    for (; i < line.size(); i++) {
+        tmp.push_back(line[i]);
+        if (line[i] == ' ' && tmp.size() == 1) {
+            tmp.erase(tmp.begin());
+            continue;
+        }
+        if (line[i] == ' ')
+            break;
+    }
+    tmp.pop_back();
+    *pos = i;
+    return tmp;
+}
+
+std::string Parser::getStreetName(std::string line, int *pos)
+{
+    std::string tmp;
+    size_t i = (size_t)*pos;
+
+    for (; i < line.size(); i++) {
+        tmp.push_back(line[i]);
+        if (line[i] == ' ' && tmp.size() == 1) {
+            tmp.erase(tmp.begin());
+            continue;
+        }
+    }
+    *pos = i;
+    return tmp;
+}
+
+bool Parser::PerfectPlace(std::string line)
+{
     std::stringstream iss(line);
     std::string token;
-    std::vector<std::string> DeletedEspaces;
     bool validated_string = false;
     std::string full_street_name;
+    std::string full_city_name;
+    std::string full_type_street;
+    std::string full_nb_street;
+    int pos = 0;
 
-    while (std::getline(iss, token, ' ')) {
-        DeletedEspaces.push_back(token);
+    full_city_name = getCityName(line, &pos);
+    if (!full_city_name.empty())
+        validated_string = verif_alpha_char(true, full_city_name);
+    if (validated_string) {
+        full_nb_street = getNbStreet(line, &pos);
+        //std::cout << "nb : *" << full_nb_street << "*" <<std::endl;
+        validated_string = verif_nb_street(full_nb_street);
     }
-    /* for (size_t i = 0; i < DeletedEspaces.size(); i++)
-        std::cout << DeletedEspaces[i] << std::endl; */
-    for (size_t i = 0; i < DeletedEspaces.size(); i++) {
-        if (i == 0) {
-            validated_string = verif_alpha_char(true, DeletedEspaces[i]);
-        }
-        if (i == 1 && validated_string) {
-            validated_string = verif_nb_street(DeletedEspaces[i]);
-        }
-        if (i == 2 && validated_string) {
-            validated_string = verif_type_street(DeletedEspaces[i]);
-        }
-        if (i == 3 && validated_string) {
-            full_street_name = getStreetNameString(DeletedEspaces);
+    if (validated_string) {
+        full_type_street = getNbStreet(line, &pos);
+        //std::cout << "type : *" << full_type_street << "*" << std::endl;
+       validated_string = verif_type_street(full_type_street);
+    }
+    if (validated_string) {
+        full_street_name = getStreetName(line, &pos);
+        //std::cout << "rue : *" << full_street_name << std::endl;
+        if (!full_street_name.empty())
             validated_string = verif_alpha_char(false, full_street_name);
-            exit(0);
-        }
-        if (validated_string == true)
-            i = i;
-        //mettre dans la globale + reset validated string
+        else
+            validated_string = false;
     }
+    if (validated_string)
+        return true;
+    return false;
 }
 
 void Parser::checkLine(const std::string& line)

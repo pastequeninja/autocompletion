@@ -35,7 +35,7 @@ class Parser {
     ~Parser()= default;
     std::vector<std::string> clean_list;
     static void checkLine(const std::string& line);
-    static void SplitEverything(std::string);
+    static bool PerfectPlace(std::string);
     static std::string fileIsValid(const char *dico);
     void fillData();
     static std::string trim(const std::string& str, const std::string& whitespace = " \t");
@@ -47,7 +47,9 @@ class Parser {
     static bool verif_alpha_char(bool, std::string);
     static bool verif_nb_street(std::string);
     static bool verif_type_street(std::string);
-    static std::string getStreetNameString(std::vector<std::string>);
+    static std::string getCityName(std::string, int *);
+    static std::string getNbStreet(std::string, int *);
+    static std::string getStreetName(std::string, int *);
 
     private:
     std::vector<std::string> _street;
